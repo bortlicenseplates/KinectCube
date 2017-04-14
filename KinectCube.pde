@@ -1,3 +1,9 @@
+
+
+import ComputationalGeometry.*;
+import quickhull3d.*;
+import template.library.*;
+PShader blur;
 import queasycam.*;
 
 //Libraries
@@ -14,28 +20,32 @@ PImage depthImageA;
 PImage depthImageB;
 Kinect2 kinectA;
 Kinect2 kinectB;
-color selectCol = color(100,200,255);
+color selectCol = color(100, 200, 255);
 
 QueasyCam cam;
 
 //My classes
-Cloud cloudA;
-Cloud cloudB;
+Cubes cubesA;
+Cubes cubesB;
+Mesh mesh;
+
+IsoWrap wrap;
 
 //ControlWindow
-Controller controls;
+//Controller controls;
+final int dMax = 2048;
 
 void settings() {
-  size(512, 424, P3D);
+  size(1920, 1080, P3D);
   PJOGL.profile = 1;
 }
 
 void setup() {
+  blur = loadShader("blurFrag.glsl"); 
   //cam = new QueasyCam(this);
   //cam.sensitivity = 0.1;
-  //cam.speed = 1;
-  //perspective(PI/3, (float)width/height, 0.01, 10000);
-  controls = new Controller();
+  //cam.speed = 10;
+  //controls = new Controller();
   stroke(255);
   strokeWeight(2);
   depthImageA = loadImage("data/depth.png");
@@ -57,8 +67,9 @@ void setup() {
   inputB = createGraphics(kinectB.depthWidth, kinectB.depthHeight, P3D);
 
   //My stuff
-  cloudA = new Cloud(kinectA.depthWidth, kinectA.depthHeight, 4 );
-  cloudB = new Cloud(kinectB.depthWidth, kinectB.depthHeight, 1);
+  cubesA = new Cubes(kinectA.depthWidth, kinectA.depthHeight, 10 );
+  mesh = new Mesh(kinectA.depthWidth, kinectA.depthHeight, 4 );
+  cubesB = new Cubes(kinectB.depthWidth, kinectB.depthHeight, 1);
 }
 
 float r;
@@ -71,30 +82,38 @@ void mRot() {
     tempr = mouseX;
   }
 }
-void test(){
+void test() {
+  lights();
+  pushMatrix();
   image(kinectA.getDepthImage(), 0, 0, kinectA.depthWidth, kinectA.depthHeight);
 
   rotateY(PI);
   translate(-kinectA.depthWidth, 0);
   image(kinectB.getDepthImage(), 0, 0);
+  popMatrix();
 }
 void draw() {
-  //test();
-  //translate(width/2 - kinectA.depthWidth/2,0);
+  if (keyPressed) {
+    filter(blur);
+  }
+  //perspective(HALF_PI, width/height, mouseY, 100000);
+  pushMatrix();
+  rotate(frameCount*0.01);
+  pointLight(255, 0, 255, 0, height/2, 0);
+  pointLight(0, 255, 255, width, height/2, 0);
+  popMatrix();
+  pushMatrix();
+  noStroke();
   background(0);
-  
-  //float ry = mouseY - (height/2);
-  //translate(mouseX,ry);
-  //rotateY(HALF_PI+r);
   drawA();
-  rotateY(PI);
-  //drawB();
+  popMatrix();
+  
 }
 
 void drawA() {
-  cloudA.scan(kinectA.getRawDepth(), 1);
+  cubesA.scan(kinectA.getRawDepth(), 1);
 }
 
 void drawB() {
-  cloudB.scan(kinectB.getRawDepth(), -1);
+  cubesB.scan(kinectB.getRawDepth(), -1);
 }
